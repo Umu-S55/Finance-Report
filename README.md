@@ -1,0 +1,2 @@
+# Finance-Report
+過去数回のEPS/Revenueを取得してSurpriseとして算出しCSVに書き込み
