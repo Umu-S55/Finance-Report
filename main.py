@@ -5,12 +5,16 @@
 import re
 import pandas as pd
 import time
+import chromedriver_binary
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 
-# Kilo,Million,Billion変換
 def KMB_Convert(moji):
+    """K/M/B(単位)を数値に変換する
+    :param moji:EPSやRevenueの数値(文字)
+    :return: EPSやRevenueの数値(数値)
+    """
     print('moji is{}'.format(moji))
     # moji_num = re.findall(r'[-+]?\d*\.\d+', moji)
     moji_num = re.findall(r'[-+]?[$]+\d*\.\d+', moji)
@@ -33,8 +37,10 @@ def KMB_Convert(moji):
     return moji_num
 
 
-# This Funcion is currently not working.
 def Avoid_Page(URL):
+    """ロボット認証を回避する関数
+    未完成につき、現在使用できず。
+    """
     options = Options()
     # TODO: webページの取得
     driver = webdriver.Chrome(options=options)
@@ -49,16 +55,15 @@ def Avoid_Page(URL):
 
 if __name__ == '__main__':
     # TODO: 検索対象のコードを読みこむ
-
-    ticker_code = []
-    tik = 'AAA'
-    while True:
-        print("Input Ticker Code (Ex:'AAPL'):")
-        print("If you finish your input, please enter 'end'. ")
-        tik = input()
-        if tik == 'end':
-            break
-        ticker_code.append(tik)
+    ticker_code = ['AMD']
+    # tik = 'AAA'
+    # while True:
+    #     print("Input Ticker Code (Ex:'AAPL'):")
+    #     print("If you finish your input, please enter 'end'. ")
+    #     tik = input()
+    #     if tik == 'end':
+    #         break
+    #     ticker_code.append(tik)
     # TODO: コードの数だけ処理を繰り返す
     for code in ticker_code:
         URL = 'https://seekingalpha.com/symbol/' + code + '/' + 'earnings'
@@ -67,7 +72,8 @@ if __name__ == '__main__':
         # TODO: データスクレイピング
         options = Options()
         # TODO: webページの取得
-        driver = webdriver.Chrome(options=options)
+        # driver = webdriver.Chrome(options=options)
+        driver = webdriver.Chrome()
         driver.get(URL2)
         # TODO: ロボット回避
         h1_tag = driver.find_elements_by_tag_name("h1")
@@ -98,6 +104,7 @@ if __name__ == '__main__':
         eps_actual_lst = []
         eps_estimate_lst = []
         eps_surprise_lst = []
+        eps_surprise_lst_pst = []
         if row_eps:
             for eps in row_eps:
                 actual_eps = re.findall(r'[-+]?[$]+\d*\.\d+[KMB]*', eps.text)
@@ -106,22 +113,32 @@ if __name__ == '__main__':
                 actual_eps[1] = actual_eps[0] - actual_eps[1]
                 eps_actual_lst.append(actual_eps[0])
                 eps_estimate_lst.append(actual_eps[1])
+                print('eps[0] is {}'.format(actual_eps[0]))
+                print('eps[1] is {}'.format(actual_eps[1]))
                 eps_surprise = 0
                 eps_surprise = actual_eps[0] - actual_eps[1]
-                print(eps_surprise)
+                eps_surprise_lst.append(eps_surprise)
                 if eps_surprise < 0:
-                    eps_surprise_lst.append((abs(eps_surprise)/abs(actual_eps[1])) * 100 * -1)
+                    try:
+                        eps_surprise_lst_pst.append((abs(eps_surprise)/abs(actual_eps[1])) * 100 * -1)
+                    except ZeroDivisionError:
+                        eps_surprise_lst_pst.append('N/A')
                 else:
-                    eps_surprise_lst.append((abs(eps_surprise)/abs(actual_eps[1])) * 100)
+                    try:
+                        eps_surprise_lst_pst.append((abs(eps_surprise)/abs(actual_eps[1])) * 100)
+                    except ZeroDivisionError:
+                        eps_surprise_lst_pst.append('N/A')
         print('EPS_Actual:{}'.format(eps_actual_lst))
         print('EPS_Estimate:{}'.format(eps_estimate_lst))
         print('EPS_Surprise:{}'.format(eps_surprise_lst))
+        print('EPS_Surprise(%):{}'.format(eps_surprise_lst_pst))
 
         # Revenue(売上高)取得
         row_revenue = driver.find_elements_by_class_name("revenue")
         revenue_actual_lst = []
         revenue_estimate_lst = []
         revenue_surprise_lst = []
+        revenue_surprise_lst_pst = []
         if row_revenue:
             for revenue in row_revenue:
                 revenue_lst = []
@@ -132,32 +149,35 @@ if __name__ == '__main__':
                 revenue_lst[1] = revenue_lst[0] - revenue_lst[1]
                 revenue_surprise = 0
                 revenue_surprise = revenue_lst[0] - revenue_lst[1]
-                print(revenue_surprise)
+                revenue_surprise_lst.append(revenue_surprise)
                 if revenue_surprise < 0:
-                    revenue_lst.append((abs(revenue_surprise)/abs(revenue_lst[1])) * 100 * -1)
+                    revenue_surprise_lst_pst.append((abs(revenue_surprise)/abs(revenue_lst[1])) * 100 * -1)
                 else:
-                    revenue_lst.append((abs(revenue_surprise)/abs(revenue_lst[1])) * 100)
+                    revenue_surprise_lst_pst.append((abs(revenue_surprise)/abs(revenue_lst[1])) * 100)
                 revenue_actual_lst.append(revenue_lst[0])
                 revenue_estimate_lst.append(revenue_lst[1])
-                revenue_surprise_lst.append(revenue_lst[2])
+                # revenue_surprise_lst_pst.append(revenue_lst[2])
         print('Revenue Actual:{}'.format(revenue_actual_lst))
         print('Revenue Estimate:{}'.format(revenue_estimate_lst))
         print('Revenue Surprise:{}'.format(revenue_surprise_lst))
+        print('Revenue Surprise(%):{}'.format(revenue_surprise_lst_pst))
 
         # TODO: データ処理
         period_list = pd.Series(actual_period)
         eps_act_list = pd.Series(eps_actual_lst)
         eps_est_list = pd.Series(eps_estimate_lst)
         eps_sps_list = pd.Series(eps_surprise_lst)
+        eps_sps_pst_list = pd.Series(eps_surprise_lst_pst)
         revenue_act_list = pd.Series(revenue_actual_lst)
         revenue_est_list = pd.Series(revenue_estimate_lst)
         revenue_sps_list = pd.Series(revenue_surprise_lst)
+        revenue_sps_pst_list = pd.Series(revenue_surprise_lst_pst)
 
         finance_report_df = pd.concat([period_list,
-                                       eps_act_list, eps_est_list, eps_sps_list,
-                                       revenue_act_list, revenue_est_list, revenue_sps_list], axis=1)
-        finance_report_df.columns=['Period', 'EPS(Actual)', 'EPS(Estimate)', 'EPS(Surprise)',
-                                   'Revenue(Actual)', 'Revenue(Estimate)', 'Revenue(Surprise)']
+                                       eps_act_list, eps_est_list, eps_sps_list, eps_sps_pst_list,
+                                       revenue_act_list, revenue_est_list, revenue_sps_list, revenue_sps_pst_list], axis=1)
+        finance_report_df.columns=['Period', 'EPS(Actual)', 'EPS(Estimate)', 'EPS(Surprise)', 'EPS(Surprise(%))',
+                                   'Revenue(Actual)', 'Revenue(Estimate)', 'Revenue(Surprise)', 'Revenue(Surprise(%))']
         print(finance_report_df)
         # TODO: CSVファイルに結果を書き込み
         finance_report_df.to_csv('finance_report_{}.csv'.format(code),sep='\t',encoding='utf-16')
