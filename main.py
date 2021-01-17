@@ -51,11 +51,12 @@ def Avoid_Page(URL):
         webdriver.ActionChains(driver).click_and_hold(searchBtn).perform()
         time.sleep(0.001)
         cnt += 1
+        
 
 
 if __name__ == '__main__':
     # TODO: 検索対象のコードを読みこむ
-    ticker_code = ['AMD']
+    ticker_code = ['ZM','CRWD','ROKU','ICE','OKTA']
     # tik = 'AAA'
     # while True:
     #     print("Input Ticker Code (Ex:'AAPL'):")
@@ -80,12 +81,13 @@ if __name__ == '__main__':
         for h1_selector in h1_tag:
             print(h1_selector.text)
             if h1_selector.text == 'To continue, please prove you are not a robot':
-                searchBtn = driver.find_element_by_id("px-captcha")
-                cnt = 0
-                while cnt <= 150:
-                    webdriver.ActionChains(driver).click_and_hold(searchBtn).perform()
-                    time.sleep(0.1)
-                    cnt += 1
+                time.sleep(10)
+#                 searchBtn = driver.find_element_by_id("px-captcha")
+#                 cnt = 0
+#                 while cnt <= 150:
+#                     webdriver.ActionChains(driver).click_and_hold(searchBtn).perform()
+#                     time.sleep(0.1)
+#                     cnt += 1
 
         time.sleep(5)
         link_elem = driver.find_element_by_link_text("Earnings")
@@ -96,7 +98,7 @@ if __name__ == '__main__':
         actual_period = []
         if row_period:
             for period in row_period:
-                actual_period.append(period.text[10:-1])
+                actual_period.append(period.text[0:8])
         print('period:{}'.format(actual_period))
 
         # EPS取得
@@ -180,5 +182,5 @@ if __name__ == '__main__':
                                    'Revenue(Actual)', 'Revenue(Estimate)', 'Revenue(Surprise)', 'Revenue(Surprise(%))']
         print(finance_report_df)
         # TODO: CSVファイルに結果を書き込み
-        finance_report_df.to_csv('finance_report_{}.csv'.format(code),sep='\t',encoding='utf-16')
+        finance_report_df.to_csv('finance_report_{}.csv'.format(code),sep='\t')
         driver.quit()
